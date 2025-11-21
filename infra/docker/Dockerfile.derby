@@ -1,0 +1,64 @@
+# Docker image for Apache Derby database server
+
+FROM eclipse-temurin:17-jre
+
+LABEL maintainer="Healthcare System Team"
+LABEL description="Apache Derby Network Server for Healthcare System"
+LABEL version="1.0.0"
+
+# Environment variables
+ENV DERBY_VERSION=10.15.2.0 \
+    DERBY_HOME=/opt/derby \
+    PATH=$PATH:/opt/derby/bin \
+    DERBY_OPTS="-Dderby.system.home=/var/lib/derby"
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        tar && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install Apache Derby
+RUN wget -q https://archive.apache.org/dist/db/derby/db-derby-${DERBY_VERSION}/db-derby-${DERBY_VERSION}-bin.tar.gz && \
+    tar -xzf db-derby-${DERBY_VERSION}-bin.tar.gz && \
+    mv db-derby-${DERBY_VERSION}-bin ${DERBY_HOME} && \
+    rm db-derby-${DERBY_VERSION}-bin.tar.gz
+
+# Create Derby database directory
+RUN mkdir -p /var/lib/derby && \
+    chmod -R 755 /var/lib/derby
+
+# Copy database initialization scripts
+COPY db/migrations /opt/migrations/
+COPY db/seeds /opt/seeds/
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting Apache Derby Network Server..."\n\
+echo "Derby Home: ${DERBY_HOME}"\n\
+echo "Derby System Home: /var/lib/derby"\n\
+echo "Derby Version: ${DERBY_VERSION}"\n\
+\n\
+# Start Derby Network Server\n\
+cd ${DERBY_HOME}/bin\n\
+./startNetworkServer -h 0.0.0.0 -p 1527 -noSecurityManager\n\
+' > /opt/start-derby.sh && chmod +x /opt/start-derby.sh
+
+# Expose Derby network server port
+EXPOSE 1527
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD ${DERBY_HOME}/bin/NetworkServerControl ping || exit 1
+
+# Volume for persistent data
+VOLUME ["/var/lib/derby"]
+
+# Set working directory
+WORKDIR ${DERBY_HOME}
+
+# Start Derby
+CMD ["/opt/start-derby.sh"]

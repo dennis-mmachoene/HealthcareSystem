@@ -1,0 +1,84 @@
+# Docker image for Smart Healthcare Management System on GlassFish
+
+FROM eclipse-temurin:17-jdk
+
+LABEL maintainer="Healthcare System Team"
+LABEL description="Smart Healthcare Management System - GlassFish Application Server"
+LABEL version="1.0.0"
+
+# Environment variables
+ENV GLASSFISH_VERSION=7.0.0 \
+    GLASSFISH_HOME=/opt/glassfish7 \
+    PATH=$PATH:/opt/glassfish7/bin \
+    DOMAIN_NAME=domain1 \
+    ADMIN_USER=admin \
+    ADMIN_PASSWORD=admin
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        unzip \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install GlassFish
+RUN wget -q https://download.eclipse.org/ee4j/glassfish/glassfish-${GLASSFISH_VERSION}.zip && \
+    unzip -q glassfish-${GLASSFISH_VERSION}.zip -d /opt && \
+    rm glassfish-${GLASSFISH_VERSION}.zip
+
+# Create deployment directory
+RUN mkdir -p ${GLASSFISH_HOME}/glassfish/domains/${DOMAIN_NAME}/autodeploy
+
+# Copy application WAR
+COPY build/Smart_Healthcare_Management_System-war.war \
+     ${GLASSFISH_HOME}/glassfish/domains/${DOMAIN_NAME}/autodeploy/
+
+# Copy GlassFish resources configuration
+COPY web/WEB-INF/glassfish-resources.xml /tmp/
+
+# Expose ports
+# 8080: HTTP
+# 8181: HTTPS
+# 4848: Admin Console
+# 9009: Debug port
+EXPOSE 8080 8181 4848 9009
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Start domain\n\
+${GLASSFISH_HOME}/bin/asadmin start-domain ${DOMAIN_NAME}\n\
+\n\
+# Wait for domain to be ready\n\
+echo "Waiting for GlassFish to start..."\n\
+for i in {1..30}; do\n\
+    if ${GLASSFISH_HOME}/bin/asadmin list-applications > /dev/null 2>&1; then\n\
+        echo "GlassFish is ready!"\n\
+        break\n\
+    fi\n\
+    sleep 2\n\
+done\n\
+\n\
+# Configure JDBC connection pool\n\
+${GLASSFISH_HOME}/bin/asadmin add-resources /tmp/glassfish-resources.xml || true\n\
+\n\
+# Display deployed applications\n\
+echo "Deployed applications:"\n\
+${GLASSFISH_HOME}/bin/asadmin list-applications\n\
+\n\
+# Tail logs\n\
+echo "Application started. Tailing logs..."\n\
+tail -f ${GLASSFISH_HOME}/glassfish/domains/${DOMAIN_NAME}/logs/server.log\n\
+' > /opt/start.sh && chmod +x /opt/start.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/healthcare/ || exit 1
+
+# Set working directory
+WORKDIR ${GLASSFISH_HOME}
+
+# Start GlassFish
+CMD ["/opt/start.sh"]

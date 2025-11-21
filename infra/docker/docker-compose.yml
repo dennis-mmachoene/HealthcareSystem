@@ -1,0 +1,92 @@
+# Docker Compose configuration for Healthcare System
+
+version: '3.8'
+
+services:
+  # Apache Derby Database
+  derby:
+    image: healthcare-derby:latest
+    container_name: healthcare-derby
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.derby
+    ports:
+      - "1527:1527"
+    volumes:
+      - derby-data:/var/lib/derby
+      - ../../db/migrations:/opt/migrations
+      - ../../db/seeds:/opt/seeds
+    environment:
+      - DERBY_OPTS=-Dderby.system.home=/var/lib/derby
+    networks:
+      - healthcare-network
+    healthcheck:
+      test: ["CMD", "/opt/derby/bin/NetworkServerControl", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # GlassFish Application Server
+  glassfish:
+    image: healthcare-system:latest
+    container_name: healthcare-app
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.glassfish
+    ports:
+      - "8080:8080"   # HTTP
+      - "8181:8181"   # HTTPS
+      - "4848:4848"   # Admin Console
+      - "9009:9009"   # Debug port
+    depends_on:
+      derby:
+        condition: service_healthy
+    environment:
+      - DOMAIN_NAME=domain1
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=admin
+      - DB_HOST=derby
+      - DB_PORT=1527
+      - DB_NAME=healthcaredb
+      - JAVA_OPTS=-Xms512m -Xmx2048m -XX:+UseG1GC
+    networks:
+      - healthcare-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcare/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+    volumes:
+      - glassfish-logs:/opt/glassfish7/glassfish/domains/domain1/logs
+
+  # pgAdmin (Optional - for database management via web UI)
+  # Uncomment if you want a web-based database management tool
+  # adminer:
+  #   image: adminer:latest
+  #   container_name: healthcare-adminer
+  #   ports:
+  #     - "8081:8080"
+  #   environment:
+  #     - ADMINER_DEFAULT_SERVER=derby
+  #   networks:
+  #     - healthcare-network
+  #   depends_on:
+  #     - derby
+  #   restart: unless-stopped
+
+networks:
+  healthcare-network:
+    driver: bridge
+    name: healthcare-network
+
+volumes:
+  derby-data:
+    name: healthcare-derby-data
+    driver: local
+  glassfish-logs:
+    name: healthcare-glassfish-logs
+    driver: local
