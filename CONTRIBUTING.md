@@ -188,7 +188,7 @@ public class PatientService {
  * Service class for managing patient-related operations.
  * Provides CRUD operations and business logic for patient entities.
  * 
- * @author Healthcare System Team
+ * @author Dennis Mmachoene Ramara
  * @version 1.0
  * @since 2025-01-01
  */
