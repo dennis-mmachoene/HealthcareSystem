@@ -1,11 +1,11 @@
 # Smart Healthcare Management System
 
-**A production-ready Jakarta EE 9/10 enterprise application for healthcare management**
+**A Jakarta EE 9/10 enterprise application for healthcare management**
 
 [![Build Status](https://github.com/dennis-mmachoene/HealthcareSystem/workflows/CI/badge.svg)](https://github.com/dennis-mmachoene/HealthcareSystem/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)

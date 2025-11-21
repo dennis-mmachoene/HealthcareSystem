@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Smart_Healthcare_Management_System" default="assemble" basedir=".">
+  <!-- Project Properties -->
+  <property name="project.name" value="Smart_Healthcare_Management_System" />
+  <property name="project.version" value="1.0.0" />
+  <!-- Directory Structure -->
+  <property name="src.dir" location="src" />
+  <property name="web.dir" location="web" />
+  <property name="lib.dir" location="lib" />
+  <property name="build.dir" location="build" />
+  <property name="dist.dir" location="dist" />
+  <property name="test.dir" location="${src.dir}/com/healthcare/test" />
+  <!-- Build Directories -->
+  <property name="build.classes.ejb" location="${build.dir}/classes-ejb" />
+  <property name="build.classes.war" location="${build.dir}/classes-war" />
+  <property name="build.test" location="${build.dir}/test-classes" />
+  <property name="build.reports" location="${build.dir}/reports" />
+  <property name="build.coverage" location="${build.dir}/coverage" />
+  <!-- Artifact Names -->
+  <property name="ejb.jar.name" value="${project.name}-ejb.jar" />
+  <property name="war.name" value="${project.name}-war.war" />
+  <property name="ear.name" value="${project.name}.ear" />
+  <!-- GlassFish Configuration -->
+  <property name="glassfish.home" location="${env.GLASSFISH_HOME}" />
+  <property name="glassfish.domain" value="domain1" />
+  <property name="glassfish.admin.port" value="4848" />
+  <property name="glassfish.admin.user" value="admin" />
+  <property name="glassfish.admin.password" value="admin" />
+  <property
+    name="glassfish.deploy.dir"
+    location="${glassfish.home}/glassfish/domains/${glassfish.domain}/autodeploy"
+  />
+  <!-- Derby Configuration -->
+  <property name="derby.home" location="${env.DERBY_HOME}" />
+  <property name="db.host" value="localhost" />
+  <property name="db.port" value="1527" />
+  <property name="db.name" value="healthcaredb" />
+  <!-- Classpath for Compilation -->
+  <path id="compile.classpath">
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${glassfish.home}/glassfish/modules">
+      <include name="jakarta.ejb-api.jar" />
+      <include name="jakarta.persistence-api.jar" />
+      <include name="jakarta.ws.rs-api.jar" />
+      <include name="jakarta.servlet-api.jar" />
+      <include name="jakarta.servlet.jsp-api.jar" />
+      <include name="jakarta.jms-api.jar" />
+      <include name="jakarta.annotation-api.jar" />
+      <include name="jakarta.transaction-api.jar" />
+      <include name="jakarta.validation-api.jar" />
+      <include name="jakarta.json-api.jar" />
+      <include name="jakarta.json.bind-api.jar" />
+    </fileset>
+    <!-- Derby JDBC Driver -->
+    <fileset dir="${derby.home}/lib" erroronmissingdir="false">
+      <include name="derbyclient.jar" />
+      <include name="derbytools.jar" />
+    </fileset>
+  </path>
+  <!-- Classpath for Tests -->
+  <path id="test.classpath">
+    <path refid="compile.classpath" />
+    <pathelement location="${build.classes.ejb}" />
+    <pathelement location="${build.classes.war}" />
+    <pathelement location="${build.test}" />
+    <fileset dir="${lib.dir}/test" erroronmissingdir="false">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+  <!-- ================================== -->
+  <!-- Target: init - Initialize build    -->
+  <!-- ================================== -->
+  <target name="init" description="Initialize build directories">
+    <echo message="Initializing build environment for ${project.name} v${project.version}" />
+    <tstamp>
+      <format property="build.timestamp" pattern="yyyy-MM-dd HH:mm:ss" />
+    </tstamp>
+    <echo message="Build timestamp: ${build.timestamp}" />
+    <mkdir dir="${build.dir}" />
+    <mkdir dir="${build.classes.ejb}" />
+    <mkdir dir="${build.classes.war}" />
+    <mkdir dir="${build.test}" />
+    <mkdir dir="${build.reports}" />
+    <mkdir dir="${build.coverage}" />
+    <mkdir dir="${dist.dir}" />
+    <!-- Verify GlassFish installation -->
+    <available file="${glassfish.home}" type="dir" property="glassfish.present" />
+    <fail
+      unless="glassfish.present"
+      message="GlassFish not found at ${glassfish.home}. Please set GLASSFISH_HOME environment variable."
+    />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: clean - Remove build files -->
+  <!-- ================================== -->
+  <target name="clean" description="Clean build artifacts">
+    <echo message="Cleaning build directories..." />
+    <delete dir="${build.dir}" />
+    <delete dir="${dist.dir}" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: compile-ejb - Compile EJB  -->
+  <!-- ================================== -->
+  <target name="compile-ejb" depends="init" description="Compile EJB module">
+    <echo message="Compiling EJB module..." />
+    <javac
+      srcdir="${src.dir}"
+      destdir="${build.classes.ejb}"
+      includeantruntime="false"
+      encoding="UTF-8"
+      source="11"
+      target="11"
+      debug="true"
+      debuglevel="lines,vars,source"
+    >
+      <classpath refid="compile.classpath" />
+      <include name="com/healthcare/entity/**/*.java" />
+      <include name="com/healthcare/dto/**/*.java" />
+      <include name="com/healthcare/mapper/**/*.java" />
+      <include name="com/healthcare/repository/**/*.java" />
+      <include name="com/healthcare/service/**/*.java" />
+      <include name="com/healthcare/mdb/**/*.java" />
+      <include name="com/healthcare/config/**/*.java" />
+      <include name="com/healthcare/util/**/*.java" />
+      <include name="com/healthcare/exception/**/*.java" />
+      <include name="com/healthcare/security/**/*.java" />
+      <include name="com/healthcare/jobs/**/*.java" />
+    </javac>
+    <echo message="EJB compilation complete." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: compile-war - Compile WAR  -->
+  <!-- ================================== -->
+  <target name="compile-war" depends="compile-ejb" description="Compile WAR module">
+    <echo message="Compiling WAR module..." />
+    <javac
+      srcdir="${src.dir}"
+      destdir="${build.classes.war}"
+      includeantruntime="false"
+      encoding="UTF-8"
+      source="11"
+      target="11"
+      debug="true"
+      debuglevel="lines,vars,source"
+    >
+      <classpath refid="compile.classpath" />
+      <classpath>
+        <pathelement location="${build.classes.ejb}" />
+      </classpath>
+      <include name="com/healthcare/rest/**/*.java" />
+      <include name="com/healthcare/servlet/**/*.java" />
+      <include name="com/healthcare/filter/**/*.java" />
+      <include name="com/healthcare/interceptor/**/*.java" />
+    </javac>
+    <echo message="WAR compilation complete." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: compile - Compile all      -->
+  <!-- ================================== -->
+  <target name="compile" depends="compile-ejb,compile-war" description="Compile all modules">
+    <echo message="All modules compiled successfully." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: compile-tests              -->
+  <!-- ================================== -->
+  <target name="compile-tests" depends="compile" description="Compile test classes">
+    <echo message="Compiling test classes..." />
+    <javac
+      srcdir="${test.dir}"
+      destdir="${build.test}"
+      includeantruntime="false"
+      encoding="UTF-8"
+      source="11"
+      target="11"
+      debug="true"
+    >
+      <classpath refid="test.classpath" />
+    </javac>
+    <echo message="Test compilation complete." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: package-ejb - Build JAR    -->
+  <!-- ================================== -->
+  <target name="package-ejb" depends="compile-ejb" description="Package EJB module as JAR">
+    <echo message="Packaging EJB module..." />
+    <!-- Copy persistence.xml to META-INF -->
+    <copy todir="${build.classes.ejb}/META-INF">
+      <fileset dir="${web.dir}/META-INF">
+        <include name="persistence.xml" />
+      </fileset>
+    </copy>
+    <jar destfile="${build.dir}/${ejb.jar.name}" basedir="${build.classes.ejb}">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0" />
+        <attribute name="Implementation-Title" value="${project.name}-ejb" />
+        <attribute name="Implementation-Version" value="${project.version}" />
+        <attribute name="Implementation-Vendor" value="Healthcare System Team" />
+        <attribute name="Built-By" value="${user.name}" />
+        <attribute name="Built-Date" value="${build.timestamp}" />
+      </manifest>
+    </jar>
+    <echo message="EJB JAR created: ${build.dir}/${ejb.jar.name}" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: package-war - Build WAR    -->
+  <!-- ================================== -->
+  <target name="package-war" depends="compile-war,package-ejb" description="Package WAR module">
+    <echo message="Packaging WAR module..." />
+    <war destfile="${build.dir}/${war.name}" webxml="${web.dir}/WEB-INF/web.xml">
+      <!-- Web content -->
+      <fileset dir="${web.dir}">
+        <exclude name="WEB-INF/web.xml" />
+        <exclude name="META-INF/persistence.xml" />
+      </fileset>
+      <!-- WAR classes -->
+      <classes dir="${build.classes.war}" />
+      <!-- EJB classes (for embedded deployment) -->
+      <classes dir="${build.classes.ejb}" />
+      <!-- Libraries -->
+      <lib dir="${lib.dir}" erroronmissingdir="false">
+        <include name="**/*.jar" />
+        <exclude name="test/**" />
+      </lib>
+      <!-- Manifest -->
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0" />
+        <attribute name="Implementation-Title" value="${project.name}-war" />
+        <attribute name="Implementation-Version" value="${project.version}" />
+        <attribute name="Implementation-Vendor" value="Healthcare System Team" />
+        <attribute name="Built-By" value="${user.name}" />
+        <attribute name="Built-Date" value="${build.timestamp}" />
+      </manifest>
+    </war>
+    <echo message="WAR file created: ${build.dir}/${war.name}" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: assemble - Build EAR       -->
+  <!-- ================================== -->
+  <target name="assemble" depends="package-ejb,package-war" description="Assemble EAR archive">
+    <echo message="Assembling EAR archive..." />
+    <ear destfile="${build.dir}/${ear.name}" appxml="${web.dir}/META-INF/application.xml">
+      <!-- Include EJB JAR -->
+      <fileset file="${build.dir}/${ejb.jar.name}" />
+      <!-- Include WAR -->
+      <fileset file="${build.dir}/${war.name}" />
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0" />
+        <attribute name="Implementation-Title" value="${project.name}" />
+        <attribute name="Implementation-Version" value="${project.version}" />
+        <attribute name="Implementation-Vendor" value="Healthcare System Team" />
+        <attribute name="Built-By" value="${user.name}" />
+        <attribute name="Built-Date" value="${build.timestamp}" />
+      </manifest>
+    </ear>
+    <echo message="EAR file created: ${build.dir}/${ear.name}" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: test - Run unit tests      -->
+  <!-- ================================== -->
+  <target name="test" depends="compile-tests" description="Run unit tests">
+    <echo message="Running unit tests..." />
+    <junit printsummary="on" haltonfailure="no" fork="true" forkmode="once">
+      <classpath refid="test.classpath" />
+      <formatter type="xml" />
+      <formatter type="plain" usefile="false" />
+      <batchtest todir="${build.reports}">
+        <fileset dir="${build.test}">
+          <include name="**/*Test.class" />
+          <exclude name="**/integration/**" />
+        </fileset>
+      </batchtest>
+    </junit>
+    <!-- Generate HTML report -->
+    <junitreport todir="${build.reports}">
+      <fileset dir="${build.reports}">
+        <include name="TEST-*.xml" />
+      </fileset>
+      <report format="frames" todir="${build.reports}/html" />
+    </junitreport>
+    <echo message="Test reports generated in ${build.reports}/html" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: integration-test           -->
+  <!-- ================================== -->
+  <target name="integration-test" depends="compile-tests" description="Run integration tests">
+    <echo message="Running integration tests..." />
+    <echo message="Note: Requires running GlassFish server with deployed application" />
+    <junit printsummary="on" haltonfailure="no" fork="true">
+      <classpath refid="test.classpath" />
+      <formatter type="xml" />
+      <formatter type="plain" usefile="false" />
+      <batchtest todir="${build.reports}">
+        <fileset dir="${build.test}">
+          <include name="**/integration/**/*Test.class" />
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+  <!-- ================================== -->
+  <!-- Target: checkstyle                 -->
+  <!-- ================================== -->
+  <target name="checkstyle" depends="init" description="Run Checkstyle code analysis">
+    <echo message="Running Checkstyle analysis..." />
+    <taskdef
+      resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+      classpath="${lib.dir}/checkstyle-10.12.5-all.jar"
+    />
+    <checkstyle
+      config="tools/checkstyle.xml"
+      failOnViolation="false"
+      failureProperty="checkstyle.failure"
+    >
+      <fileset dir="${src.dir}" includes="**/*.java" />
+      <formatter type="xml" tofile="${build.reports}/checkstyle-result.xml" />
+      <formatter type="plain" />
+    </checkstyle>
+    <echo message="Checkstyle report generated: ${build.reports}/checkstyle-result.xml" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: deploy-local               -->
+  <!-- ================================== -->
+  <target name="deploy-local" depends="package-war" description="Deploy to local GlassFish">
+    <echo message="Deploying ${war.name} to GlassFish..." />
+    <!-- Check if GlassFish is running -->
+    <condition property="glassfish.running">
+      <socket server="localhost" port="${glassfish.admin.port}" />
+    </condition>
+    <fail
+      unless="glassfish.running"
+      message="GlassFish is not running. Please start it with: asadmin start-domain ${glassfish.domain}"
+    />
+    <!-- Deploy using asadmin -->
+    <exec executable="${glassfish.home}/bin/asadmin" failonerror="true">
+      <arg value="deploy" />
+      <arg value="--force=true" />
+      <arg value="--contextroot" />
+      <arg value="healthcare" />
+      <arg value="${build.dir}/${war.name}" />
+    </exec>
+    <echo message="Application deployed successfully!" />
+    <echo message="Access at: http://localhost:8080/healthcare" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: undeploy-local             -->
+  <!-- ================================== -->
+  <target name="undeploy-local" description="Undeploy from local GlassFish">
+    <echo message="Undeploying application from GlassFish..." />
+    <exec executable="${glassfish.home}/bin/asadmin" failonerror="false">
+      <arg value="undeploy" />
+      <arg value="${project.name}-war" />
+    </exec>
+    <echo message="Application undeployed." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: redeploy-local             -->
+  <!-- ================================== -->
+  <target
+    name="redeploy-local"
+    depends="undeploy-local,deploy-local"
+    description="Redeploy to local GlassFish"
+  >
+    <echo message="Application redeployed successfully!" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: docker-build               -->
+  <!-- ================================== -->
+  <target name="docker-build" depends="assemble" description="Build Docker images">
+    <echo message="Building Docker images..." />
+    <!-- Build GlassFish image -->
+    <exec executable="docker" failonerror="true">
+      <arg value="build" />
+      <arg value="-f" />
+      <arg value="infra/docker/Dockerfile.glassfish" />
+      <arg value="-t" />
+      <arg value="healthcare-system:${project.version}" />
+      <arg value="." />
+    </exec>
+    <!-- Build Derby image -->
+    <exec executable="docker" failonerror="true">
+      <arg value="build" />
+      <arg value="-f" />
+      <arg value="infra/docker/Dockerfile.derby" />
+      <arg value="-t" />
+      <arg value="healthcare-derby:${project.version}" />
+      <arg value="." />
+    </exec>
+    <echo message="Docker images built successfully!" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: docker-up                  -->
+  <!-- ================================== -->
+  <target name="docker-up" description="Start Docker Compose environment">
+    <echo message="Starting Docker Compose environment..." />
+    <exec executable="docker-compose" dir="infra/docker" failonerror="true">
+      <arg value="up" />
+      <arg value="-d" />
+    </exec>
+    <echo message="Docker environment started. Application will be available at http://localhost:8080/healthcare" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: docker-down                -->
+  <!-- ================================== -->
+  <target name="docker-down" description="Stop Docker Compose environment">
+    <echo message="Stopping Docker Compose environment..." />
+    <exec executable="docker-compose" dir="infra/docker">
+      <arg value="down" />
+    </exec>
+    <echo message="Docker environment stopped." />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: javadoc                    -->
+  <!-- ================================== -->
+  <target name="javadoc" depends="init" description="Generate Javadoc documentation">
+    <echo message="Generating Javadoc..." />
+    <javadoc
+      sourcepath="${src.dir}"
+      destdir="${build.dir}/docs/javadoc"
+      packagenames="com.healthcare.*"
+      author="true"
+      version="true"
+      use="true"
+      windowtitle="${project.name} API Documentation"
+    >
+      <classpath refid="compile.classpath" />
+      <doctitle>
+        <![CDATA[<h1>Smart Healthcare Management System</h1>]]>
+      </doctitle>
+      <bottom>
+        <![CDATA[<i>Copyright &#169; 2025 Healthcare System Team. All Rights Reserved.</i>]]>
+      </bottom>
+    </javadoc>
+    <echo message="Javadoc generated at ${build.dir}/docs/javadoc" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: dist - Create distribution -->
+  <!-- ================================== -->
+  <target name="dist" depends="assemble,javadoc" description="Create distribution package">
+    <echo message="Creating distribution package..." />
+    <mkdir dir="${dist.dir}" />
+    <!-- Copy artifacts -->
+    <copy todir="${dist.dir}">
+      <fileset file="${build.dir}/${ejb.jar.name}" />
+      <fileset file="${build.dir}/${war.name}" />
+      <fileset file="${build.dir}/${ear.name}" />
+    </copy>
+    <!-- Copy documentation -->
+    <copy todir="${dist.dir}/docs">
+      <fileset dir="docs" />
+    </copy>
+    <!-- Copy scripts -->
+    <copy todir="${dist.dir}/scripts">
+      <fileset dir="scripts" />
+    </copy>
+    <!-- Create ZIP archive -->
+    <zip destfile="${dist.dir}/${project.name}-${project.version}.zip">
+      <fileset dir="${dist.dir}">
+        <exclude name="*.zip" />
+      </fileset>
+    </zip>
+    <echo message="Distribution package created: ${dist.dir}/${project.name}-${project.version}.zip" />
+  </target>
+  <!-- ================================== -->
+  <!-- Target: help - Display targets     -->
+  <!-- ================================== -->
+  <target name="help" description="Display available targets">
+    <echo message="Smart Healthcare Management System - Build Targets" />
+    <echo message="==================================================" />
+    <echo message="" />
+    <echo message="Main Targets:" />
+    <echo message="  clean           - Remove all build artifacts" />
+    <echo message="  compile         - Compile all Java sources" />
+    <echo message="  compile-ejb     - Compile EJB module only" />
+    <echo message="  compile-war     - Compile WAR module only" />
+    <echo message="  package-ejb     - Build EJB JAR" />
+    <echo message="  package-war     - Build WAR file" />
+    <echo message="  assemble        - Build EAR (default)" />
+    <echo message="  test            - Run unit tests" />
+    <echo message="  integration-test- Run integration tests" />
+    <echo message="  deploy-local    - Deploy to local GlassFish" />
+    <echo message="  undeploy-local  - Undeploy from GlassFish" />
+    <echo message="  redeploy-local  - Redeploy to GlassFish" />
+    <echo message="  docker-build    - Build Docker images" />
+    <echo message="  docker-up       - Start Docker environment" />
+    <echo message="  docker-down     - Stop Docker environment" />
+    <echo message="  checkstyle      - Run code style analysis" />
+    <echo message="  javadoc         - Generate API documentation" />
+    <echo message="  dist            - Create distribution package" />
+    <echo message="" />
+  </target>
+</project>
