@@ -111,7 +111,6 @@ derby.log
 # Environment vars
 .env
 .env.local
-.env.*.local
 
 # Temp credentials
 *.key
