@@ -7,7 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 /**
  * Mapper for converting between Appointment entity and AppointmentDTO.
  * 
- * @author Dennis Mmachoene Ramara
+ * @author Healthcare System Team
  * @version 1.0
  */
 @ApplicationScoped

@@ -1,3 +1,4 @@
+// src/com/healthcare/mapper/PatientMapper.java
 package com.healthcare.mapper;
 
 import com.healthcare.dto.PatientDTO;
@@ -8,7 +9,7 @@ import jakarta.inject.Inject;
 /**
  * Mapper for converting between Patient entity and PatientDTO.
  * 
- * @author Dennis Mmachoene Ramara
+ * @author Healthcare System Team
  * @version 1.0
  */
 @ApplicationScoped
